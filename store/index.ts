@@ -116,5 +116,5 @@ export const useRideStore = create((set) => ({
 
 export const usePassengerStore = create((set) => ({
   passengerRide: null,
-  setPassengerRide: (ride) => set({ passengerRide: ride }),
+  setPassengerRide: (passengerRide) => set({ passengerRide: passengerRide }),
 }));

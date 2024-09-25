@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Image, Alert } from 'react-native'
+import { View, Text, ScrollView, Image, Alert, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import FormField from '@/components/FormField'
@@ -6,13 +6,15 @@ import CustomButton from '@/components/CustomButton'
 import { Link, router } from 'expo-router'
 import axios from 'axios'
 import { API_URL } from '@/lib/utils'
+import { useUserStore } from '@/store'
 
 const SignUp = () => {
+  const { setUser } = useUserStore();
   const [form, setForm] = useState({
     name: '',
     email: '',
     phone: '',
-    user_type: 'passenger',
+    user_type: 'user',
     password: '',
     profile_picture_url: "https://via.placeholder.com/150/92c952"
   })
@@ -29,10 +31,10 @@ const SignUp = () => {
       
       if(userData.status === 'success') {
         // Dispatch the user data to Redux
-        
+        setUser(userData.user);
         // Check user type and navigate accordingly
-        if (userData.user.user_type === 'passenger') {
-          router.push('/(root)/(user)/find-ride');
+        if (userData.user.user_type === 'user') {
+          router.push('/(root)/(user)/ride/find-ride');
         } else if (userData.user.user_type === 'driver') {
           router.push('/(root)/(driver)');
         } else {
@@ -41,6 +43,7 @@ const SignUp = () => {
       }else{
         setErrorMessage(userData.message);
       }
+      console.log(userData);
     } catch (error:any) {
       // Handle error from API or network issues
       // Alert.alert('Login Error', error.response?.data?.message || 'An error occurred during login.');
@@ -48,6 +51,11 @@ const SignUp = () => {
     } finally {
       setIsSubmitting(false);
     }
+    
+  };
+
+  const handleUserTypeChange = (type: string) => {
+    setForm({ ...form, user_type: type });
   };
     
 
@@ -74,17 +82,45 @@ const SignUp = () => {
             title="Email"
             value={form.email}
             handleChangeText={(e:any) => setForm({ ...form, email: e})}
-            otherStyles="mt-7"
+            otherStyles="mt-3"
             keyboardType="email-address"
+          />
+
+          <FormField 
+            title="Phone"
+            value={form.phone}
+            handleChangeText={(e:any) => setForm({ ...form, phone: e})}
+            otherStyles="mt-3"
           />
 
           <FormField 
             title="Password"
             value={form.password}
             handleChangeText={(e:any) => setForm({ ...form, password: e})}
-            otherStyles="mt-7"
+            otherStyles="mt-3"
             keyboardType="email-address"
           />
+
+          {/* User Type Selection */}
+          <Text className="mt-3 mb-2 text-md text-gray-800">Account type</Text>
+          <View className="flex-row justify-between">
+            <TouchableOpacity
+              className={`py-3 px-4 rounded-lg flex-1 mr-2 ${form.user_type === 'user' ? 'bg-primary' : 'bg-gray-200'}`}
+              onPress={() => handleUserTypeChange('user')}
+            >
+              <Text className={`text-center text-lg ${form.user_type === 'user' ? 'text-white' : 'text-gray-800'}`}>
+                User
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className={`py-3 px-4 rounded-lg flex-1 ml-2 ${form.user_type === 'driver' ? 'bg-primary' : 'bg-gray-200'}`}
+              onPress={() => handleUserTypeChange('driver')}
+            >
+              <Text className={`text-center text-lg ${form.user_type === 'driver' ? 'text-white' : 'text-gray-800'}`}>
+                Driver
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           { errorMessage && (<Text className='text-red-500 mt-3'>{errorMessage}</Text>)}
 

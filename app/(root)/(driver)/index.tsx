@@ -1,26 +1,37 @@
-import { View, Text, FlatList, ActivityIndicator, Image, Alert } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, Image, Alert, TouchableOpacity } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import PassengerCard from '@/components/PassengerCard';
-import { usePassengerStore, useUserStore } from '@/store';
+import { useLocationStore, usePassengerStore, useUserStore } from '@/store';
 import axios from 'axios';
 import { API_URL } from '@/lib/utils';
 import DriverRideLayout from '@/components/DriverRideLayout';
 import { images } from '@/constants';
 import * as Location from 'expo-location';
-
+import { useRouter } from 'expo-router';
 
 const Home = () => {
     const { passengerRide, setPassengerRide } = usePassengerStore();
     const { user } = useUserStore();
+    const { setUserLocation } = useLocationStore();
     const [loading, setLoading] = useState(false);
+    const [driverExists, setDriverExists] = useState(false); // State to check if driver exists
+    const router = useRouter();
 
     const fetchRides = async () => {
         setLoading(true);
         try {
-            const response = await axios.get(`${API_URL}/drivers/${user._id}/rides`);
-            setPassengerRide(response.data);  // Set the fetched ride data to the store
+            // Check if the driver exists
+            const driverResponse = await axios.get(`${API_URL}/drivers/${user._id}/vehicle`);
+            if (driverResponse.data[0]) {
+                setDriverExists(true);
+                // Fetch rides only if the driver exists
+                const ridesResponse = await axios.get(`${API_URL}/drivers/${user._id}/rides`);
+                setPassengerRide(ridesResponse.data);  // Set the fetched ride data to the store
+            } else {
+                setDriverExists(false);
+            }
         } catch (error) {
-            Alert.alert('Error', error.response?.data?.message || 'An error occurred.');
+            console.log('Error', error.response?.data?.message);
         } finally {
             setLoading(false);
         }
@@ -31,32 +42,30 @@ const Home = () => {
     }, []);
 
     const [hasPermission, setHasPermission] = useState<boolean>(false);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    useEffect(() => {
+        (async () => {
+            let { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== "granted") {
+                setHasPermission(false);
+                return;
+            }
 
-//   useEffect(() => {
-//     (async () => {
-//       let { status } = await Location.requestForegroundPermissionsAsync();
-//       if (status !== "granted") {
-//         setHasPermission(false);
-//         return;
-//       }
+            let location = await Location.getCurrentPositionAsync({});
 
-//       let location = await Location.getCurrentPositionAsync({});
+            const address = await Location.reverseGeocodeAsync({
+                latitude: location.coords?.latitude!,
+                longitude: location.coords?.longitude!,
+            });
 
-//       const address = await Location.reverseGeocodeAsync({
-//         latitude: location.coords?.latitude!,
-//         longitude: location.coords?.longitude!,
-//       });
-
-//       setUserLocation({
-//         latitude: location.coords?.latitude,
-//         longitude: location.coords?.longitude,
-//         address: `${address[0].name}, ${address[0].region}`,
-//       });
-//     })();
-//   }, []);
+            setUserLocation({
+                latitude: location.coords?.latitude,
+                longitude: location.coords?.longitude,
+                address: `${address[0].name}, ${address[0].region}`,
+            });
+        })();
+    }, []);
 
     return (
         <DriverRideLayout showSidebar showBackArrow={false} snapPoints={["65%", "85%"]}>
@@ -82,6 +91,17 @@ const Home = () => {
                                     resizeMode="contain"
                                 />
                                 <Text className="text-sm">No rides found</Text>
+                                {!driverExists && (
+                                    <>
+                                    <Text className="text-sm">Add your vehicle to start receiving rides</Text>
+                                    <TouchableOpacity
+                                        className="mt-4 bg-primary px-10 py-3 rounded-md"
+                                        onPress={() => router.push('/(driver)/vehicle')}
+                                    >
+                                        <Text className="text-white text-lg">Add Vehicle</Text>
+                                    </TouchableOpacity>
+                                    </>
+                                )}
                             </View>
                         )
                     }

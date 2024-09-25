@@ -68,7 +68,7 @@ const RideLayout = ({
                 />
                 <View className="flex flex-col items-start space-x-0.5">
                   <Text className="text-xl font-semibold">{user.name}</Text>
-                  <Link href="/(root)/(user)/review" className="text-md font-normal text-primary">View Profile</Link>
+                  <Link href="/(root)/(user)/review" className="text-md font-normal text-primary">User</Link>
                 </View>
               </View>
               <View className="mt-5">
@@ -105,7 +105,7 @@ const RideLayout = ({
               <SafeAreaView className="flex flex-row absolute z-10 items-center justify-start px-5">
                 {/* Hamburger Icon */}
                 {showSidebar && (
-                  <TouchableOpacity onPress={toggleSidebar}>
+                  <TouchableOpacity onPress={toggleSidebar} className="mt-5">
                     <View className="w-10 h-10 bg-white rounded-full shadow-2xl shadow-gray-800 items-center justify-center">
                       <Ionicons name="menu" size={24} color="black" className="w-8 h-8" />
                     </View>

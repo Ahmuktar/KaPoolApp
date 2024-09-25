@@ -6,9 +6,10 @@ const Layout = () => {
       <Stack.Screen name="index" options={{ headerShown: false }} />   
       <Stack.Screen name="confirm-ride" options={{ headerShown: false }} />   
       <Stack.Screen name="track-ride" options={{ headerShown: false }} />   
-      <Stack.Screen name="payment" options={{ headerShown: false }} />   
-      <Stack.Screen name="ride" options={{ headerShown: false }} />   
-      <Stack.Screen name="review" options={{ headerShown: false }} />   
+      <Stack.Screen name="payment" options={{ headerTitle: 'My Payment' }} />  
+      <Stack.Screen name="ride" options={{ headerTitle: 'My Rides' }} />  
+      <Stack.Screen name="review" options={{ headerTitle: 'My Reviews' }} />  
+      <Stack.Screen name="vehicle" options={{ headerTitle: 'My Vehicle' }} />  
     </Stack>
   );
 };

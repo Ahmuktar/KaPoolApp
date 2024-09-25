@@ -36,7 +36,7 @@ const SignIn = () => {
   
         // Check user type and navigate accordingly
         if (userData.user.user_type === 'user') {
-          router.push('/(root)/(user)/find-ride');
+          router.push('/(root)/(user)/ride/find-ride');
         } else if (userData.user.user_type === 'driver') {
           router.push('/(root)/(driver)');
         } else {

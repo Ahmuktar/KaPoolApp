@@ -1,6 +1,7 @@
 import { Ride } from "@/types/type";
 
-export const API_URL = 'http://192.168.59.186:5000/api';
+// export const API_URL = 'http://192.168.59.186:5000/api';
+export const API_URL = 'https://ka-pool-backend.vercel.app/api';
 
 export const sortRides = (rides:any): any => {
   const result = rides.sort((a, b) => {
