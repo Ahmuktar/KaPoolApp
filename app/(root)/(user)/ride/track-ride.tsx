@@ -21,6 +21,7 @@ const TrackRide = () => {
   const [rideStatus, setRideStatus] = useState(ride.ride_status);
   const [isModalVisible, setModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false)
+  const [isPaymentVisible, setPaymentVisible] = useState(false);
 
   const filteredDriver = drivers.filter((driver) => driver.driver_id._id === ride.driver_id);
 
@@ -33,8 +34,9 @@ const TrackRide = () => {
         setRideStatus(response.data.ride_status);
         // Redirect to review page if ride is completed
         if (response.data.ride_status === 'completed') {
-          return <Redirect href={`/(root)/(user)/review/${ride._id}`} />
-          setRide(null)
+          setPaymentVisible(true);
+          // return <Redirect href={`/(root)/(user)/review/${ride._id}`} />
+          // setRide(null)
         }
       } catch (error) {
         console.error('Error fetching ride status:', error);
@@ -52,8 +54,9 @@ const TrackRide = () => {
   }, [drivers]); // Depend on ride so it updates when ride changes
   
   if (rideStatus === 'completed') {
-    return <Redirect href={`/(root)/(user)/review/${ride._id}`} />
-    setRide(null)
+    setPaymentVisible(true);
+    // return <Redirect href={`/(root)/(user)/review/${ride._id}`} />
+    // setRide(null)
   }
 
 

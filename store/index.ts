@@ -91,16 +91,16 @@ export const useUserStore = create(
   persist(
     (set) => ({
       user: null,
-      isLoading: true,  // Add this line
+      isLoading: true,  // Initial loading state
       setUser: (user) => set({ user }),
       logOut: () => set({ user: null }),
-      setIsLoading: (isLoading) => set({ isLoading }),  // Add this line
+      setIsLoading: (isLoading) => set({ isLoading }),  // Manage loading state
     }),
     {
       name: 'user-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => AsyncStorage),  // Use AsyncStorage for mobile
       onRehydrateStorage: () => (state) => {
-        state.setIsLoading(false);  // Add this line
+        state?.setIsLoading(false);  // Ensure loading is set to false after rehydration
       },
     }
   )

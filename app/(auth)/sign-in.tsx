@@ -28,17 +28,14 @@ const SignIn = () => {
       });
   
       const userData = response.data;
-      
+      console.log(userData)
       if (userData.status === 'success') {
-        // Store the user data in Zustand store
-        setUser(userData.user);
-        console.log('User data stored:', userData.user);
-  
-        // Check user type and navigate accordingly
         if (userData.user.user_type === 'user') {
-          router.push('/(root)/(user)/ride/find-ride');
+          setUser(userData.user); // Persist user data
+          router.replace('/(root)/(user)/ride/find-ride');
         } else if (userData.user.user_type === 'driver') {
-          router.push('/(root)/(driver)');
+          setUser(userData.user); // Persist user data
+          router.replace('/(root)/(driver)');
         } else {
           Alert.alert('Error', 'Unknown user type.');
         }

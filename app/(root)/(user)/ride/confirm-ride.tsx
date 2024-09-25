@@ -87,14 +87,14 @@ const ConfirmRide = () => {
           data={drivers}
           keyExtractor={(item, index) => index.toString()}
           renderItem={({ item, index }) => {
-            if (!item.price && !item.time) {
-              return (
-                <View className="flex flex-col items-center justify-center">
-                  <ActivityIndicator size={"large"} color="green" />
-                  <Text>Loading drivers...</Text>
-                </View>
-              );
-            }
+            // if (!item.price && !item.time) {
+            //   return (
+            //     <View className="flex flex-col items-center justify-center">
+            //       <ActivityIndicator size={"large"} color="green" />
+            //       <Text>Loading drivers...</Text>
+            //     </View>
+            //   );
+            // }
             return (
               <DriverCard
                 item={item}

@@ -5,11 +5,20 @@ import { useUserStore } from '@/store';
 import axios from 'axios';
 import { API_URL } from '@/lib/utils';
 import { useRouter } from 'expo-router';
-import FormField from '@/components/FormField';  // Import the FormField component
+import FormField from '@/components/FormField';
+import * as Location from 'expo-location';  // Import Location
 
 const VehiclePage = () => {
     const { user } = useUserStore();
     const router = useRouter();
+
+    
+
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [latitude, setLatitude] = useState(null);
+    const [longitude, setLongitude] = useState(null);
 
     const [form, setForm] = useState({
         vehicle_make: '',
@@ -17,16 +26,13 @@ const VehiclePage = () => {
         vehicle_license_plate: '',
         vehicle_color: '',
         license_number: '',
-        vehicle_seats: '4',  // Initially set as a string for easy handling with TextInput
+        vehicle_seats: '4',
         cost_per_minute: '',
         cost_per_kilometer: '',
+        latitude: latitude,  // Add latitude
+        longitude:longitude, // Add longitude
     });
 
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isUpdating, setIsUpdating] = useState(false);  // To track if we're updating
-    const [errorMessage, setErrorMessage] = useState('');
-
-    // Fetch vehicle data to check if a vehicle already exists for the driver
     const fetchVehicleDetails = async () => {
         try {
             const response = await axios.get(`${API_URL}/drivers/${user._id}/vehicle`);
@@ -41,8 +47,10 @@ const VehiclePage = () => {
                     vehicle_seats: vehicle.vehicle_seats?.toString() || '4',
                     cost_per_minute: vehicle.cost_per_minute?.toString() || '',
                     cost_per_kilometer: vehicle.cost_per_kilometer?.toString() || '',
+                    latitude: latitude || null, // If available
+                    longitude: longitude || null, // If available
                 });
-                setIsUpdating(true);  // Set to true if the vehicle already exists
+                setIsUpdating(true);
             }
         } catch (error) {
             console.error("Error fetching vehicle details", error.response?.data);
@@ -51,8 +59,24 @@ const VehiclePage = () => {
     };
 
     useEffect(() => {
+        (async () => {
+            let { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== "granted") {
+                setHasPermission(false);
+                return;
+            }
+
+            let location = await Location.getCurrentPositionAsync({});
+
+            setLongitude(location?.coords?.longitude);
+            setLatitude(location?.coords?.latitude)
+        })();
+    }, []);
+
+    useEffect(() => {
         fetchVehicleDetails();
     }, []);
+    
 
     const submitVehicle = async () => {
         setIsSubmitting(true);
@@ -61,20 +85,18 @@ const VehiclePage = () => {
         const payload = {
             driver_id: user._id,
             ...form,
-            vehicle_seats: parseInt(form.vehicle_seats, 10),  // Convert seats back to number
+            vehicle_seats: parseInt(form.vehicle_seats, 10),
         };
 
         try {
             if (isUpdating) {
-                // If the vehicle already exists, update the vehicle
                 await axios.put(`${API_URL}/drivers/${user._id}/vehicle`, payload);
                 Alert.alert('Success', 'Vehicle updated successfully');
             } else {
-                // If no vehicle exists, add a new vehicle
                 await axios.post(`${API_URL}/drivers`, payload);
                 Alert.alert('Success', 'Vehicle added successfully');
             }
-            router.push('/(driver)');  // Redirect back to home page
+            router.push('/(driver)');
         } catch (error) {
             setErrorMessage(error.response?.data?.message || 'An error occurred.');
         } finally {
@@ -86,6 +108,7 @@ const VehiclePage = () => {
         <ScrollView className="p-4">
             <Text className="text-2xl font-bold mb-4">
                 {isUpdating ? 'Update Vehicle Details' : 'Add Vehicle Details'}
+                {longitude +' '+ latitude}
             </Text>
 
             <FormField

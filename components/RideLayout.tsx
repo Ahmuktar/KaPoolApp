@@ -7,7 +7,7 @@ import { icons } from "@/constants";
 import Map from "./Map";
 import {Ionicons, MaterialIcons} from '@expo/vector-icons';
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useUserStore } from "@/store";
+import { useRideStore, useUserStore } from "@/store";
 
 const RideLayout = ({
   title,
@@ -25,9 +25,10 @@ const RideLayout = ({
   const bottomSheetRef = useRef<BottomSheet>(null);
   const [isOpen, setIsOpen] = useState(false);
   const slideAnim = useRef(new Animated.Value(-250)).current; // Initial position of sidebar
-  const { user, setUser } = useUserStore();
+  const { user, logOut } = useUserStore();
+  const { setRide } = useRideStore();
 
-  if(user) return <Redirect href="/(auth)/sign-in" />
+  if(!user) return <Redirect href="/(auth)/sign-in" />
 
   const toggleSidebar = () => {
     Animated.timing(slideAnim, {
@@ -89,7 +90,7 @@ const RideLayout = ({
                   <Text className="text-lg">Reviews</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => {
-                    setUser(null);
+                    logOut();
                   }} className="flex-row items-center gap-3 py-2">
                   <MaterialIcons name="logout" size={24} color="red" className="w-6 h-6" />
                   <Text className="text-lg text-danger-600">Logout</Text>
