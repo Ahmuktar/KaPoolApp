@@ -25,7 +25,7 @@ const Home = () => {
             if (driverResponse.data[0]) {
                 setDriverExists(true);
                 // Fetch rides only if the driver exists
-                const ridesResponse = await axios.get(`${API_URL}/drivers/${user._id}/rides`);
+                const ridesResponse = await axios.get(`${API_URL}/rides/${user._id}/active`);
                 setPassengerRide(ridesResponse.data);  // Set the fetched ride data to the store
             } else {
                 setDriverExists(false);

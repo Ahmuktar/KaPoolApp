@@ -19,7 +19,6 @@ const MyRide = () => {
         try {
           const response = await axios.get(`${API_URL}/drivers/${user._id}/rides`); // Adjust endpoint as necessary
           setRecentRides(response.data);
-          console.log(response.data);
         } catch (error) {
           console.error('Error fetching rides:', error);
         } finally {

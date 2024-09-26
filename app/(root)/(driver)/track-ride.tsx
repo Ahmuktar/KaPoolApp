@@ -1,16 +1,23 @@
-import { View, Text, Alert } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import { View, Text, ActivityIndicator } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import { useRideStore } from '@/store';
 import { API_URL } from '@/lib/utils';
 import { router } from 'expo-router';
 import DriverRideLayout from '@/components/DriverRideLayout';
 import CustomButton from '@/components/CustomButton';
+import Modal from "react-native-modal";
 
 const TrackRide = () => {
   const { ride, setRide } = useRideStore(); // Get the ride details and setter from the store
   const [rideStatus, setRideStatus] = useState(ride.ride_status);
   const [isLoading, setIsLoading] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState(ride.payment_status); // Payment status state
+  const [paymentCheckInterval, setPaymentCheckInterval] = useState(null); // Interval ID for polling
+  const [isModalVisible, setModalVisible] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+
+  const MAX_RETRIES = 3;
 
   // Fetch ride status periodically
   const checkRideStatus = async () => {
@@ -35,10 +42,8 @@ const TrackRide = () => {
       await axios.put(`${API_URL}/rides/${ride._id}/status`, {
         ride_status: 'approved',
       });
-      Alert.alert('Success', 'Ride has been accepted');
       setRideStatus('approved');
     } catch (error) {
-      Alert.alert('Error', 'Failed to accept ride. Please try again.');
       console.error('Error updating ride status:', error);
     } finally {
       setIsLoading(false);
@@ -52,10 +57,9 @@ const TrackRide = () => {
       await axios.put(`${API_URL}/rides/${ride._id}/status`, {
         ride_status: 'arrived',
       });
-      Alert.alert('Success', 'You have arrived at the destination');
       setRideStatus('arrived');
     } catch (error) {
-      Alert.alert('Error', 'Failed to update status.');
+      console.error('Error updating status:', error);
     } finally {
       setIsLoading(false);
     }
@@ -68,10 +72,9 @@ const TrackRide = () => {
       await axios.put(`${API_URL}/rides/${ride._id}/status`, {
         ride_status: 'in_progress',
       });
-      Alert.alert('Success', 'Ride has started');
       setRideStatus('in_progress');
     } catch (error) {
-      Alert.alert('Error', 'Failed to start the ride.');
+      console.error('Error starting the ride:', error);
     } finally {
       setIsLoading(false);
     }
@@ -84,13 +87,51 @@ const TrackRide = () => {
       await axios.put(`${API_URL}/rides/${ride._id}/status`, {
         ride_status: 'completed',
       });
-      Alert.alert('Success', 'Ride is complete');
       setRideStatus('completed');
     } catch (error) {
-      Alert.alert('Error', 'Failed to complete the ride.');
+      console.error('Error completing the ride:', error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  
+
+  // Function to poll payment status
+  const pollPaymentStatus = useCallback(async () => {
+    if (retryCount >= MAX_RETRIES) {
+      setIsLoading(false);
+      return;
+    }
+    try {
+      const response = await axios.get(`${API_URL}/payments/${ride._id}`);
+      if (response.data.paymentStatus === 'paid') {
+        setPaymentStatus('paid');
+        setIsLoading(false);
+        setRetryCount(0); // Reset retry count once payment is confirmed
+      } else {
+        setRetryCount(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error('Error checking payment status:', error.response.data.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [retryCount, ride._id]);
+
+  // Effect to periodically check payment status while modal is visible
+  useEffect(() => {
+    if (isModalVisible && paymentStatus !== 'paid') {
+      const intervalId = setInterval(pollPaymentStatus, 10000); // Poll every 10 seconds
+      return () => clearInterval(intervalId); // Cleanup the interval on unmount
+    }
+  }, [isModalVisible, paymentStatus, pollPaymentStatus]);
+
+  // Handler to show modal and start polling
+  const handleCheckPayment = () => {
+    setModalVisible(true);
+    setIsLoading(true); // Start loader
+    pollPaymentStatus(); // Initial check
   };
 
   // Conditional button rendering based on ride status
@@ -122,11 +163,22 @@ const TrackRide = () => {
         );
       case 'completed':
         return (
-          <CustomButton
-            title="Check Payment"
-            isLoading={isLoading}
-            handlePress={() => Alert.alert('Payment', 'Check payment functionality here')}
-          />
+          <View>
+            {isLoading ? (
+              <ActivityIndicator size="large" color="#0000ff" />
+            ) : (
+              <CustomButton
+                title="Check Payment"
+                isLoading={isLoading}
+                handlePress={handleCheckPayment}
+                disabled={isLoading} // Disable button during loading
+              />
+            )}
+          </View>
+        );
+      case 'paid':
+        return (
+          <Text className="text-green-500 text-xl">Payment has been completed</Text>
         );
       default:
         return (
@@ -144,17 +196,44 @@ const TrackRide = () => {
       <View className="flex-1">
         {/* Ride Details */}
         <View className="bg-white px-5 rounded-xl shadow-md mb-4">
-        
           <Text className="text-lg font-bold text-gray-900 mb-2">Ride Details</Text>
           <Text className="text-gray-700">Passenger: {ride.user_id?.name}</Text>
           <Text className="text-gray-700">From: {ride.origin_address}</Text>
           <Text className="text-gray-700">To: {ride.destination_address}</Text>
           <Text className="text-gray-700">Fare: ₦{Number(ride.fare_price).toFixed(0)}</Text>
           <Text className="text-gray-700">Status: {rideStatus}</Text>
+          <Text className="text-gray-700">Payment: {paymentStatus}</Text>
         </View>
 
         {/* Render action buttons based on ride status */}
         {renderActionButton()}
+
+        {/* Modal for payment status */}
+        <Modal isVisible={isModalVisible} className="bottom-0">
+          <View className="bg-white text-center items-center rounded-lg p-5">
+            {isLoading ? (
+              <View className="flex flex-col items-center justify-center">
+                <ActivityIndicator size="large" color="green" />
+                <Text className="mt-2">Verifying payment...</Text>
+              </View>
+            ) : paymentStatus === 'paid' ? (
+              <>
+                <Text className="font-semibold text-2xl">Payment Success</Text>
+                <Text className="my-3 text-lg text-gray-600 text-center">The payment for this ride has been completed.</Text>
+                <CustomButton
+                  title="Ok"
+                  handlePress={() => {
+                    setModalVisible(false); // Close modal
+                    router.push('/(driver)'); // Navigate away
+                  }}
+                  containerStyles="mt-7 w-full"
+                />
+              </>
+            ) : retryCount >= MAX_RETRIES ? (
+              <Text className="text-red-500">Payment verification failed. Please try again later.</Text>
+            ) : null}
+          </View>
+        </Modal>
       </View>
     </DriverRideLayout>
   );

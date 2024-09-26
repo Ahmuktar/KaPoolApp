@@ -108,7 +108,6 @@ const VehiclePage = () => {
         <ScrollView className="p-4">
             <Text className="text-2xl font-bold mb-4">
                 {isUpdating ? 'Update Vehicle Details' : 'Add Vehicle Details'}
-                {longitude +' '+ latitude}
             </Text>
 
             <FormField

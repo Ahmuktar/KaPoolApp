@@ -1,8 +1,10 @@
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Image } from 'react-native';
 import React from 'react';
 import { useRideStore } from '@/store';
 import { useNavigation } from '@react-navigation/native';
 import { router } from 'expo-router';
+import { icons } from '@/constants';
+import { formatDate, formatTime } from '@/lib/utils';
 
 const PassengerCard = ({ ride }) => {
   const { setRide } = useRideStore(); // Access the ride store
@@ -20,50 +22,60 @@ const PassengerCard = ({ ride }) => {
   return (
     <TouchableOpacity
       onPress={handleCardPress}
-      className="bg-white p-6 rounded-xl shadow-lg mb-4 border border-gray-200"
-      style={{
-        elevation: 4, // Adds shadow for Android
-        backgroundColor: '#f9fafb', // Light background color for a modern feel
-      }}
+      className="flex flex-row items-start justify-center bg-white border-general-300 border rounded-lg shadow-md mb-3 p-4"
     >
-      {/* Ride Details */}
-      <View className="mb-4">
-        <Text className="font-semibold text-lg text-black mb-1">
-          {ride.user_id?.name || 'Passenger'}
-        </Text>
-        <View className="flex-row justify-between">
-          <Text className="text-gray-600 text-sm">From:</Text>
-          <Text className="text-gray-800 text-sm font-medium ml-2">
-            {ride.origin_address}
-          </Text>
-        </View>
-        <View className="flex-row justify-between mt-2">
-          <Text className="text-gray-600 text-sm">To:</Text>
-          <Text className="text-gray-800 text-sm font-medium ml-2">
-            {ride.destination_address}
-          </Text>
-        </View>
-      </View>
+      <View className="flex-1">
+        <View className="flex flex-row items-center mb-4">
+          <View className="flex-1">
+            <View className="flex flex-row items-center mb-2">
+              <Image source={icons.to} className="w-5 h-5 mr-2" />
+              <Text className="text-md font-medium" numberOfLines={1}>
+                {ride.origin_address}
+              </Text>
+            </View>
 
-      {/* Fare and Status */}
-      <View className="flex-row justify-between items-center mt-3">
-        <View>
-          <Text className="text-sm text-gray-600">Fare</Text>
-          <Text className="text-lg text-green-600 font-bold">
-            ${ride.fare_price.toFixed(2)}
-          </Text>
+            <View className="flex flex-row items-center">
+              <Image source={icons.point} className="w-5 h-5 mr-2" />
+              <Text className="text-md font-medium" numberOfLines={1}>
+                {ride.destination_address}
+              </Text>
+            </View>
+          </View>
         </View>
-        <View>
-          <Text className="text-sm text-gray-600">Status</Text>
-          <Text
-            className={`text-lg font-bold ${
-              ride.ride_status === 'completed' ? 'text-green-600' : 'text-yellow-600'
-            }`}
-          >
-            {ride.ride_status.charAt(0).toUpperCase() + ride.ride_status.slice(1)}
-          </Text>
+
+        <View className="bg-general-500 rounded-lg p-3">
+          <View className="flex flex-row justify-between mb-3">
+            <Text className="text-md font-normal text-gray-500">Passenger</Text>
+            <Text className="text-md font-semibold" numberOfLines={1}>
+              {ride.user_id?.name || 'Passenger'}
+            </Text>
+          </View>
+          <View className="flex flex-row justify-between mb-3">
+            <Text className="text-md font-normal text-gray-500">Price</Text>
+            <Text className="text-md font-semibold" numberOfLines={1}>
+            ₦{ride.fare_price.toFixed(2)}
+            </Text>
+          </View>
+          <View className="flex flex-row justify-between mb-3">
+            <Text className="text-md font-normal text-gray-500">Date & Time</Text>
+            <Text className="text-md font-semibold" numberOfLines={1}>
+              {formatDate(ride.createdAt)}, {formatTime(ride.ride_time)}
+            </Text>
+          </View>
+
+          <View className="flex flex-row justify-between">
+            <Text className="text-md font-normal text-gray-500">Status</Text>
+            <Text
+              className={`text-md font-semibold ${
+                ride.ride_status === "requested" ? "text-yellow-500" : "text-green-500"
+              }`}
+            >
+              {ride.ride_status.charAt(0).toUpperCase() + ride.ride_status.slice(1)}
+            </Text>
+          </View>
         </View>
       </View>
+        
     </TouchableOpacity>
   );
 };

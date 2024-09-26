@@ -7,16 +7,19 @@ import { formatTime } from "@/lib/utils";
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import CustomButton from "@/components/CustomButton";
-import { useLocationStore, useRideStore, useDriverStore } from "@/store";
+import { useLocationStore, useRideStore, useDriverStore, useUserStore } from "@/store";
 import axios from 'axios';
 import { Redirect, router } from "expo-router";
 import { API_URL } from '@/lib/utils'
+import PaystackPayment from "@/components/PaystackPayment";
 
 
 const TrackRide = () => {
   const { userAddress, destinationAddress } = useLocationStore();
-  const { setRide, ride } = useRideStore();
+  const { setRide, ride} = useRideStore();
   const { drivers } = useDriverStore();
+  const { user } = useUserStore();
+
 
   const [rideStatus, setRideStatus] = useState(ride.ride_status);
   const [isModalVisible, setModalVisible] = useState(false);
@@ -53,11 +56,12 @@ const TrackRide = () => {
     return () => clearInterval(intervalId);
   }, [drivers]); // Depend on ride so it updates when ride changes
   
-  if (rideStatus === 'completed') {
-    setPaymentVisible(true);
-    // return <Redirect href={`/(root)/(user)/review/${ride._id}`} />
-    // setRide(null)
-  }
+  useEffect(() => {
+    if (rideStatus === 'completed') {
+      setPaymentVisible(true);
+    }
+  }, [rideStatus]); 
+  
 
 
   const handleEndRide = async () => {
@@ -115,6 +119,15 @@ const TrackRide = () => {
       console.error('Error cancelling ride:', error);
       Alert.alert('Error', 'Failed to cancel the ride. Please try again.');
     }
+  };
+
+  const handlePaymentSuccess = (response) => {
+    // Handle post-payment success actions (e.g., updating ride status)
+    Alert.alert('Payment Successful', 'Your payment was successful');
+    return <Redirect href={`/(root)/(user)/review/${ride._id}`} />
+    setRide(null)
+    setPaymentVisible(false);
+
   };
 
   return (
@@ -219,6 +232,16 @@ const TrackRide = () => {
             </View>
           </View>
         </Modal>
+
+        {isPaymentVisible && (
+          <PaystackPayment
+            amount={ride.fare_price} // Paystack expects the amount in kobo (1 Naira = 100 kobo)
+            email={user.email} // Replace with actual user email
+            reference={`ride-${ride._id}`}
+            onSuccess={handlePaymentSuccess}
+            ride={ride}
+          />
+        )}
       </>
     </RideLayout>
   );
