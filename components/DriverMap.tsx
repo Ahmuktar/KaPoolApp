@@ -6,7 +6,7 @@ import axios from "axios";
 import MapViewDirections from "react-native-maps-directions";
 import { API_URL } from "@/lib/utils";
 import { useRideStore, useLocationStore, useUserStore } from "@/store";
-import * as Location from 'expo-location';
+import * as Location from "expo-location";
 
 const directionsAPI = process.env.EXPO_PUBLIC_GOOGLE_API_KEY;
 
@@ -18,21 +18,24 @@ const DriverMap = () => {
   const [loading, setLoading] = useState(false);
   const [mapRegion, setMapRegion] = useState(null);
   const [driverLocation, setDriverLocation] = useState(null);
+  const [hasPermission, setHasPermission] = useState(null); // Track permission status
 
   // Update driver location periodically
   useEffect(() => {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
+      setHasPermission(status === "granted"); // Check and set permission
+
       if (status !== "granted") {
-        setHasPermission(false);
+        console.warn("Permission to access location was denied");
         return;
       }
 
       let location = await Location.getCurrentPositionAsync({});
 
       const address = await Location.reverseGeocodeAsync({
-        latitude: location.coords?.latitude!,
-        longitude: location.coords?.longitude!,
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
       });
 
       setDriverLocation({
@@ -63,13 +66,16 @@ const DriverMap = () => {
 
     const updateDriverLocation = async (longitude, latitude) => {
       try {
-        const response = await axios.put(`${API_URL}/drivers/${user._id}/location`, {
-          longitude,
-          latitude,
-        });
+        const response = await axios.put(
+          `${API_URL}/drivers/${user._id}/location`,
+          {
+            longitude,
+            latitude,
+          }
+        );
         setDriverLocation({ latitude, longitude });
       } catch (error) {
-        console.error('Error updating driver location:', error);
+        console.error("Error updating driver location:", error);
       }
     };
 
@@ -95,7 +101,7 @@ const DriverMap = () => {
           provider={PROVIDER_DEFAULT}
           style={{ width: "100%", height: "100%" }}
           region={mapRegion}
-          showsUserLocation={driverLocation !== null ? false : true}
+          showsUserLocation={!!driverLocation} // Show user location only if driverLocation is not null
           loadingEnabled={true}
         >
           {ride && (
@@ -109,7 +115,7 @@ const DriverMap = () => {
                   }}
                   title={`${ride.driver_id.name}`}
                   description="Driver's current location"
-                  image={icons.marker} // Use a custom car icon for the driver's marker
+                  image={icons.marker}
                 />
               )}
 
@@ -132,7 +138,6 @@ const DriverMap = () => {
                 }}
                 title="Destination"
                 description={ride.destination_address}
-                
               />
 
               {/* Route from driver's location to destination */}

@@ -24,7 +24,7 @@ const Map = () => {
     destinationLongitude,
   } = useLocationStore();
   const { drivers, selectedDriver, setDrivers } = useDriverStore();
-  
+
   const [markers, setMarkers] = useState<MarkerData[]>([]);
   const [travelTime, setTravelTime] = useState(0);
   const [travelDistance, setTravelDistance] = useState(0);
@@ -35,7 +35,10 @@ const Map = () => {
       const data = response.data;
       setDrivers(data);
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.message || 'An error occurred.');
+      Alert.alert(
+        "Error",
+        error.response?.data?.message || "An error occurred."
+      );
     }
   };
 
@@ -102,7 +105,7 @@ const Map = () => {
     destinationLongitude,
   });
 
-  return (
+  return userLatitude && userLongitude && region ? ( // Ensure coordinates are valid before rendering
     <MapView
       provider={PROVIDER_DEFAULT}
       className="w-full h-full rounded-2xl"
@@ -113,47 +116,61 @@ const Map = () => {
       showsUserLocation={true}
       userInterfaceStyle="light"
     >
-      {markers.map((driver) => (
-        <Marker
-          key={driver.id}
-          coordinate={{ latitude: driver.latitude, longitude: driver.longitude }}
-          title={driver.driver_id.name}
-          description={`Vehicle: ${driver.vehicle_make}`}
-          pinColor="blue"
-          image={
-            selectedDriver === driver.driver_id._id ? icons.selectedMarker : icons.marker
-          }
-        />
-      ))}
+      {markers.length > 0
+        ? markers?.map(
+            (driver) =>
+              driver.latitude &&
+              driver.longitude && ( // Ensure driver's coordinates are valid
+                <Marker
+                  key={driver.id}
+                  coordinate={{
+                    latitude: driver.latitude,
+                    longitude: driver.longitude,
+                  }}
+                  title={driver.driver_id.name}
+                  description={`Vehicle: ${driver.vehicle_make}`}
+                  pinColor="blue"
+                  image={
+                    selectedDriver === driver.driver_id._id
+                      ? icons.selectedMarker
+                      : icons.marker
+                  }
+                />
+              )
+          )
+        : null}
 
-      {destinationLatitude && destinationLongitude && (
-        <>
-          <Marker
-            key="destination"
-            coordinate={{
-              latitude: destinationLatitude,
-              longitude: destinationLongitude,
-            }}
-            title="Destination"
-            image={icons.pin}
-          />
-          <MapViewDirections
-            origin={{
-              latitude: userLatitude!,
-              longitude: userLongitude!,
-            }}
-            destination={{
-              latitude: destinationLatitude,
-              longitude: destinationLongitude,
-            }}
-            apikey={directionsAPI!}
-            strokeColor="#0286FF"
-            strokeWidth={2}
-            onReady={handleDirectionsReady}
-          />
-        </>
-      )}
+      {destinationLatitude &&
+        destinationLongitude && ( // Ensure destination coordinates are valid
+          <>
+            <Marker
+              key={destinationLatitude}
+              coordinate={{
+                latitude: destinationLatitude,
+                longitude: destinationLongitude,
+              }}
+              title="Destination"
+              image={icons.pin}
+            />
+            <MapViewDirections
+              origin={{
+                latitude: userLatitude!,
+                longitude: userLongitude!,
+              }}
+              destination={{
+                latitude: destinationLatitude,
+                longitude: destinationLongitude,
+              }}
+              apikey={directionsAPI!}
+              strokeColor="#0286FF"
+              strokeWidth={2}
+              onReady={handleDirectionsReady}
+            />
+          </>
+        )}
     </MapView>
+  ) : (
+    <ActivityIndicator size="large" color="#0000ff" /> // Show loading indicator if coordinates are not available yet
   );
 };
 
