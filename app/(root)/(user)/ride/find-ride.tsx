@@ -25,36 +25,6 @@ const FindRide = () => {
   // Redirect if a ride is already in progress
   if (ride) return <Redirect href="/(root)/(user)/ride/track-ride" />;
 
-  useEffect(() => {
-    (async () => {
-      // Request foreground location permissions
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        setHasPermission(false);
-        setErrorMsg("Location permission is required to find rides.");
-        return;
-      }
-
-      // Get current location
-      let location = await Location.getCurrentPositionAsync({});
-
-      // Get address based on the coordinates
-      const address = await Location.reverseGeocodeAsync({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      });
-
-      // Set user location
-      setUserLocation({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        address: `${address[0].name}, ${address[0].region}`,
-      });
-
-      setHasPermission(true);
-    })();
-  }, []);
-
   return (
     <RideLayout title="Ride" showSidebar showBackArrow={false}>
       {errorMsg ? <Text>{errorMsg}</Text> : null}

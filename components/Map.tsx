@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { ActivityIndicator, View, Alert, Text } from "react-native";
 import MapView, { Marker, PROVIDER_DEFAULT } from "react-native-maps";
 import { icons } from "@/constants";
@@ -27,8 +27,6 @@ const Map = () => {
   const { drivers, selectedDriver, setDrivers } = useDriverStore();
 
   const [markers, setMarkers] = useState<MarkerData[]>([]);
-  const [travelTime, setTravelTime] = useState(0);
-  const [travelDistance, setTravelDistance] = useState(0);
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
   const [loading, setLoading] = useState(true); // For indicating the map load state
   const [error, setError] = useState(null);
@@ -88,39 +86,43 @@ const Map = () => {
     }
   }, [drivers, userLatitude, userLongitude]);
 
-  // Debounced version of calculateDriverTimes to avoid multiple re-renders
-  const calculateDriverTimesDebounced = debounce(() => {
-    if (markers.length > 0 && destinationLatitude && destinationLongitude) {
-      calculateDriverTimes({
-        markers,
-        userLatitude,
-        userLongitude,
-        destinationLatitude,
-        destinationLongitude,
-      }).then((updatedDrivers) => {
-        if (updatedDrivers) {
-          setDrivers(updatedDrivers);
-        }
-      });
-    }
-  }, 10000); // Debounce with 10 seconds
+  // Memoize the debounced function using useCallback to avoid re-creating it on every render
+  const calculateDriverTimesDebounced = useCallback(
+    debounce(() => {
+      if (markers.length > 0 && destinationLatitude && destinationLongitude) {
+        calculateDriverTimes({
+          markers,
+          userLatitude,
+          userLongitude,
+          destinationLatitude,
+          destinationLongitude,
+        }).then((updatedDrivers) => {
+          if (
+            updatedDrivers &&
+            JSON.stringify(updatedDrivers) !== JSON.stringify(drivers)
+          ) {
+            setDrivers(updatedDrivers); // Only update if drivers have changed
+          }
+        });
+      }
+    }, 10000),
+    [markers, destinationLatitude, destinationLongitude]
+  );
 
-  useEffect(() => {
-    if (markers.length > 0 && destinationLatitude && destinationLongitude) {
-      calculateDriverTimesDebounced();
-      const interval = setInterval(() => {
-        calculateDriverTimesDebounced();
-      }, 10000); // 10 seconds interval
-      return () => clearInterval(interval);
-    }
-  }, [markers, destinationLatitude, destinationLongitude]);
-
-  const handleDirectionsReady = (result) => {
-    const duration = result.duration; // Duration in minutes
-    const distance = result.distance; // Distance in kilometers
-    setTravelTime(duration);
-    setTravelDistance(distance);
-  };
+  // useEffect(() => {
+  //   if (markers.length > 0 && destinationLatitude && destinationLongitude) {
+  //     calculateDriverTimesDebounced();
+  //     const interval = setInterval(() => {
+  //       calculateDriverTimesDebounced();
+  //     }, 10000); // 10 seconds interval
+  //     return () => clearInterval(interval);
+  //   }
+  // }, [
+  //   markers,
+  //   destinationLatitude,
+  //   destinationLongitude,
+  //   calculateDriverTimesDebounced,
+  // ]);
 
   const region = calculateRegion({
     userLatitude,
@@ -147,6 +149,7 @@ const Map = () => {
       </View>
     );
   }
+
   return userLatitude && userLongitude && region ? ( // Ensure coordinates are valid before rendering
     <MapView
       provider={PROVIDER_DEFAULT}
@@ -168,7 +171,7 @@ const Map = () => {
               driver.latitude &&
               driver.longitude && ( // Ensure driver's coordinates are valid
                 <Marker
-                  key={driver.id}
+                  key={driver._id}
                   coordinate={{
                     latitude: driver.latitude,
                     longitude: driver.longitude,
@@ -186,7 +189,7 @@ const Map = () => {
           )
         : null}
 
-      {destinationLatitude &&
+      {/* {destinationLatitude &&
         destinationLongitude && ( // Ensure destination coordinates are valid
           <>
             <Marker
@@ -216,7 +219,7 @@ const Map = () => {
               }
             />
           </>
-        )}
+        )} */}
     </MapView>
   ) : (
     <ActivityIndicator size="large" color="#0000ff" /> // Show loading indicator if coordinates are not available yet

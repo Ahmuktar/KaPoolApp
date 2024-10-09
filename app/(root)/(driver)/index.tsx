@@ -54,34 +54,6 @@ const Home = () => {
     fetchRides();
   }, []);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") {
-          setErrorMsg("Permission to access location was denied");
-          setHasPermission(false);
-          return;
-        }
-
-        const location = await Location.getCurrentPositionAsync({});
-        const address = await Location.reverseGeocodeAsync({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        });
-
-        setUserLocation({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-          address: `${address[0]?.name || ""}, ${address[0]?.region || ""}`,
-        });
-        setHasPermission(true);
-      } catch (err) {
-        console.error("Location error:", err);
-      }
-    })();
-  }, []);
-
   return (
     <DriverRideLayout
       showSidebar
