@@ -23,6 +23,7 @@ const Map = () => {
     userLatitude,
     destinationLatitude,
     destinationLongitude,
+    setUserLocation,
   } = useLocationStore();
   const { drivers, selectedDriver, setDrivers } = useDriverStore();
 
@@ -51,6 +52,19 @@ const Map = () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === "granted") {
         setHasLocationPermission(true);
+
+        let location = await Location.getCurrentPositionAsync({});
+
+        const address = await Location.reverseGeocodeAsync({
+          latitude: location.coords?.latitude!,
+          longitude: location.coords?.longitude!,
+        });
+
+        setUserLocation({
+          latitude: location.coords?.latitude,
+          longitude: location.coords?.longitude,
+          address: `${address[0].name}, ${address[0].region}`,
+        });
       } else {
         Alert.alert(
           "Location Permission",
@@ -124,6 +138,24 @@ const Map = () => {
   //   calculateDriverTimesDebounced,
   // ]);
 
+  useEffect(() => {
+    if (
+      markers.length > 0 &&
+      destinationLatitude !== undefined &&
+      destinationLongitude !== undefined
+    ) {
+      calculateDriverTimes({
+        markers,
+        userLatitude,
+        userLongitude,
+        destinationLatitude,
+        destinationLongitude,
+      }).then((drivers) => {
+        setDrivers(drivers as MarkerData[]);
+      });
+    }
+  }, [markers, destinationLatitude, destinationLongitude]);
+
   const region = calculateRegion({
     userLatitude,
     userLongitude,
@@ -189,7 +221,7 @@ const Map = () => {
           )
         : null}
 
-      {/* {destinationLatitude &&
+      {destinationLatitude &&
         destinationLongitude && ( // Ensure destination coordinates are valid
           <>
             <Marker
@@ -213,13 +245,12 @@ const Map = () => {
               apikey={directionsAPI!}
               strokeColor="#0286FF"
               strokeWidth={2}
-              onReady={handleDirectionsReady}
               onError={(e) =>
                 setError("Failed to load directions. Please try again.")
               }
             />
           </>
-        )} */}
+        )}
     </MapView>
   ) : (
     <ActivityIndicator size="large" color="#0000ff" /> // Show loading indicator if coordinates are not available yet

@@ -148,22 +148,22 @@ const DriverMap = () => {
             {/* Origin marker */}
             <Marker
               coordinate={{
-                latitude: ride.origin_latitude,
-                longitude: ride.origin_longitude,
+                latitude: ride?.origin_latitude,
+                longitude: ride?.origin_longitude,
               }}
               title="Origin"
-              description={ride.origin_address}
+              description={ride?.origin_address}
               image={icons.pin}
             />
 
             {/* Destination marker */}
             <Marker
               coordinate={{
-                latitude: ride.destination_latitude,
-                longitude: ride.destination_longitude,
+                latitude: ride?.destination_latitude,
+                longitude: ride?.destination_longitude,
               }}
               title="Destination"
-              description={ride.destination_address}
+              description={ride?.destination_address}
             />
 
             {/* Route from driver's location to destination */}
