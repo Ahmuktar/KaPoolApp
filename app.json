@@ -24,7 +24,7 @@
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
       ],
-      "package": "com.ahmuktar.KaPool"
+      "package": "com.nureex.KaPool"
     },
     "web": {
       "bundler": "metro",
@@ -48,9 +48,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "d3f3df6c-94b7-434a-a2f7-cb8d89b8a474"
+        "projectId": "2725a718-096f-4f74-bfd2-9cc0443588a0"
       }
     },
-    "owner": "ahmuktar"
+    "owner": "nureex"
   }
 }

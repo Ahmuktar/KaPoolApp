@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Text, View, Alert } from "react-native";
+import { ActivityIndicator, View, Alert, Text } from "react-native";
 import MapView, { Marker, PROVIDER_DEFAULT } from "react-native-maps";
 import { icons } from "@/constants";
 import {
@@ -8,11 +8,12 @@ import {
   generateMarkersFromData,
 } from "@/lib/map";
 import { useDriverStore, useLocationStore } from "@/store";
-import { Driver, MarkerData } from "@/types/type";
+import { MarkerData } from "@/types/type";
 import axios from "axios";
 import MapViewDirections from "react-native-maps-directions";
 import debounce from "lodash/debounce";
 import { API_URL } from "@/lib/utils";
+import * as Location from "expo-location";
 
 const directionsAPI = process.env.EXPO_PUBLIC_GOOGLE_API_KEY;
 
@@ -28,6 +29,9 @@ const Map = () => {
   const [markers, setMarkers] = useState<MarkerData[]>([]);
   const [travelTime, setTravelTime] = useState(0);
   const [travelDistance, setTravelDistance] = useState(0);
+  const [hasLocationPermission, setHasLocationPermission] = useState(false);
+  const [loading, setLoading] = useState(true); // For indicating the map load state
+  const [error, setError] = useState(null);
 
   const fetchDrivers = async () => {
     try {
@@ -37,14 +41,40 @@ const Map = () => {
     } catch (error: any) {
       Alert.alert(
         "Error",
-        error.response?.data?.message || "An error occurred."
+        error.response?.data?.message ||
+          "An error occurred while fetching drivers."
       );
     }
   };
 
+  // Check for location permissions
+  const checkLocationPermission = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === "granted") {
+        setHasLocationPermission(true);
+      } else {
+        Alert.alert(
+          "Location Permission",
+          "Permission to access location was denied."
+        );
+        setHasLocationPermission(false);
+      }
+    } catch (e) {
+      setError("Failed to check location permission");
+      setHasLocationPermission(false);
+    }
+  };
+
   useEffect(() => {
-    fetchDrivers();
+    checkLocationPermission();
   }, []);
+
+  useEffect(() => {
+    if (hasLocationPermission) {
+      fetchDrivers();
+    }
+  }, [hasLocationPermission]);
 
   // Generate markers from driver data
   useEffect(() => {
@@ -75,18 +105,12 @@ const Map = () => {
     }
   }, 10000); // Debounce with 10 seconds
 
-  // Immediate call and subsequent calls after 10 seconds
   useEffect(() => {
     if (markers.length > 0 && destinationLatitude && destinationLongitude) {
-      // Call the debounced function immediately
       calculateDriverTimesDebounced();
-
-      // Set up a 10-second interval for the next call
       const interval = setInterval(() => {
         calculateDriverTimesDebounced();
-      }, 10000); // 10 seconds delay
-
-      // Clean up the interval on component unmount
+      }, 10000); // 10 seconds interval
       return () => clearInterval(interval);
     }
   }, [markers, destinationLatitude, destinationLongitude]);
@@ -105,6 +129,24 @@ const Map = () => {
     destinationLongitude,
   });
 
+  // Render fallback UI in case of error or missing permissions
+  if (error) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <Text style={{ color: "red" }}>{error}</Text>
+      </View>
+    );
+  }
+
+  if (!hasLocationPermission) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <Text>
+          No location permissions granted. Please enable location services.
+        </Text>
+      </View>
+    );
+  }
   return userLatitude && userLongitude && region ? ( // Ensure coordinates are valid before rendering
     <MapView
       provider={PROVIDER_DEFAULT}
@@ -115,6 +157,10 @@ const Map = () => {
       initialRegion={region}
       showsUserLocation={true}
       userInterfaceStyle="light"
+      onMapReady={() => setLoading(false)} // Map has loaded successfully
+      onError={(e: any) =>
+        setError("Failed to load the map. Please try again.")
+      }
     >
       {markers.length > 0
         ? markers?.map(
@@ -165,6 +211,9 @@ const Map = () => {
               strokeColor="#0286FF"
               strokeWidth={2}
               onReady={handleDirectionsReady}
+              onError={(e) =>
+                setError("Failed to load directions. Please try again.")
+              }
             />
           </>
         )}
