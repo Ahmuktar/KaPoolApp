@@ -14,8 +14,9 @@ import MapViewDirections from "react-native-maps-directions";
 import debounce from "lodash/debounce";
 import { API_URL } from "@/lib/utils";
 import * as Location from "expo-location";
+import Constants from "expo-constants"; // Import Expo constants
 
-const directionsAPI = process.env.EXPO_PUBLIC_GOOGLE_API_KEY;
+const googleApiKey = Constants.expoConfig?.extra?.googleApiKey; // Access API key
 
 const Map = () => {
   const {
@@ -123,38 +124,20 @@ const Map = () => {
     [markers, destinationLatitude, destinationLongitude]
   );
 
-  // useEffect(() => {
-  //   if (markers.length > 0 && destinationLatitude && destinationLongitude) {
-  //     calculateDriverTimesDebounced();
-  //     const interval = setInterval(() => {
-  //       calculateDriverTimesDebounced();
-  //     }, 10000); // 10 seconds interval
-  //     return () => clearInterval(interval);
-  //   }
-  // }, [
-  //   markers,
-  //   destinationLatitude,
-  //   destinationLongitude,
-  //   calculateDriverTimesDebounced,
-  // ]);
-
   useEffect(() => {
     if (
       markers.length > 0 &&
       destinationLatitude !== undefined &&
       destinationLongitude !== undefined
     ) {
-      calculateDriverTimes({
-        markers,
-        userLatitude,
-        userLongitude,
-        destinationLatitude,
-        destinationLongitude,
-      }).then((drivers) => {
-        setDrivers(drivers as MarkerData[]);
-      });
+      calculateDriverTimesDebounced();
     }
-  }, [markers, destinationLatitude, destinationLongitude]);
+  }, [
+    markers,
+    destinationLatitude,
+    destinationLongitude,
+    calculateDriverTimesDebounced,
+  ]);
 
   const region = calculateRegion({
     userLatitude,
@@ -197,29 +180,27 @@ const Map = () => {
         setError("Failed to load the map. Please try again.")
       }
     >
-      {markers.length > 0
-        ? markers?.map(
-            (driver) =>
-              driver.latitude &&
-              driver.longitude && ( // Ensure driver's coordinates are valid
-                <Marker
-                  key={driver._id}
-                  coordinate={{
-                    latitude: driver.latitude,
-                    longitude: driver.longitude,
-                  }}
-                  title={driver.driver_id.name}
-                  description={`Vehicle: ${driver.vehicle_make}`}
-                  pinColor="blue"
-                  image={
-                    selectedDriver === driver.driver_id._id
-                      ? icons.selectedMarker
-                      : icons.marker
-                  }
-                />
-              )
+      {markers?.map(
+        (driver) =>
+          driver.latitude &&
+          driver.longitude && ( // Ensure driver's coordinates are valid
+            <Marker
+              key={driver._id}
+              coordinate={{
+                latitude: driver.latitude,
+                longitude: driver.longitude,
+              }}
+              title={driver.driver_id.name}
+              description={`Vehicle: ${driver.vehicle_make}`}
+              pinColor="blue"
+              image={
+                selectedDriver === driver.driver_id._id
+                  ? icons.selectedMarker
+                  : icons.marker
+              }
+            />
           )
-        : null}
+      )}
 
       {destinationLatitude &&
         destinationLongitude && ( // Ensure destination coordinates are valid
@@ -242,7 +223,7 @@ const Map = () => {
                 latitude: destinationLatitude,
                 longitude: destinationLongitude,
               }}
-              apikey={directionsAPI!}
+              apikey={googleApiKey}
               strokeColor="#0286FF"
               strokeWidth={2}
               onError={(e) =>

@@ -7,8 +7,9 @@ import MapViewDirections from "react-native-maps-directions";
 import { API_URL } from "@/lib/utils";
 import { useRideStore, useLocationStore, useUserStore } from "@/store";
 import * as Location from "expo-location";
+import Constants from "expo-constants"; // Import Expo constants
 
-const directionsAPI = process.env.EXPO_PUBLIC_GOOGLE_API_KEY;
+const googleApiKey = Constants.expoConfig?.extra?.googleApiKey; // Access API key
 
 const DriverMap = () => {
   const { userLongitude, userLatitude } = useLocationStore();
@@ -177,7 +178,7 @@ const DriverMap = () => {
                   latitude: ride.destination_latitude,
                   longitude: ride.destination_longitude,
                 }}
-                apikey={directionsAPI}
+                apikey={googleApiKey}
                 strokeWidth={3}
                 strokeColor="blue"
                 onReady={handleDirectionsReady}
